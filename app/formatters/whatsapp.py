@@ -1,4 +1,5 @@
 from app.types import RankedResults
+from app.utils.dates import format_duration_minutes
 
 def format_reply(intent, ranked: RankedResults) -> str:
     missing = []
@@ -15,8 +16,9 @@ def format_reply(intent, ranked: RankedResults) -> str:
         return "Sorry, I couldn't find matching flights. Try different dates or airports?"
 
     def line(x):
-        return (f"• {x.segment_summary} | {x.duration_iso} | "
-                f"{x.currency} {x.price_total:.2f} | {x.carrier}")
+        dur = format_duration_minutes(x.total_duration_minutes)
+        return (f"• {x.carrier} | {x.segment_summary} | {dur} | "
+                f"{x.currency} {x.price_total:.2f}")
 
     parts = [
         "Here are your top options:",
