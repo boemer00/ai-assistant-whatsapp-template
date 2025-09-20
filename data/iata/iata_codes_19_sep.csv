@@ -1,0 +1,409 @@
+country,city,iata_code
+Australia,Adelaide,ADL
+Australia,Brisbane,BNE
+Australia,Cairns,CNS
+Australia,Darwin,DRW
+Australia,Gold Coast,OOL
+Australia,Melbourne,MEL
+Australia,Perth,PER
+Australia,Sydney,SYD
+Bangladesh,Dhaka,DAC
+Cambodia,Phnom Penh,PNH
+India,Ahmedabad,AMD
+India,Bangalore,BLR
+India,Calicut,CCJ
+India,Chennai,MAA
+India,Delhi,DEL
+India,Goa,GOX
+India,Hyderabad,HYD
+India,Jaipur,JAI
+India,Kolkata,CCU
+India,Mumbai ,BOM
+India,Navi Mumbai,NMI
+India,Trivandrum,TRV
+Indonesia,Denpasar,DPS
+Indonesia,Jakarta,CGK
+Japan,Chubu,NGO
+Japan,Fukuoka,FUK
+Japan,Haneda,HND
+Japan,New Chitose Airport,CTS
+Japan,Osaka-Kansai,KIX
+Japan,Tokyo-Narita,NRT
+Malaysia,Kota Kinabalu,BKI
+Malaysia,Kuala Lumpur,KUL
+Malaysia,Kuchung,KCH
+Malaysia,Langkawi,LGK
+Malaysia,Penang,PEN
+Malaysia,Senai,JHB
+New Zealand,Auckland,AKL
+New Zealand,Christchurch,CHC
+New Zealand,Queenstown,ZQN
+New Zealand,Wellington,WLG
+Pakistan,Islamabad,ISB
+Pakistan,Karachi,KHI
+Pakistan,Lahore,LHE
+Pakistan,Peshawar,PEW
+Papua New Guinea,Port Moresby,POM
+Philippines,Manila,MNL
+Republic of Korea,Incheon,ICN
+Republic of Korea,Jeju International Airport,CJU
+Republic of Korea,Seoul,GMP
+Republic of Maldives,Male,MLE
+Singapore,Changi ,SIN
+Sri Lanka,Colombo,CMB
+Thailand,Chiang Mai,CNX
+Thailand,Chiang Rai International Airport ,CEI
+Thailand,Don Mueang ,DMK
+Thailand,Hat Yai,HDY
+Thailand,Krabi,KBV
+Thailand,Phuket,HKT
+Thailand,Ko Samui ,USM
+Thailand,Suvarnabhumi,BKK
+Thailand,Utapao,UTP
+Vietnam,Hanoi,HAN
+Vietnam,Ho Chi Minh,SGN
+,,
+Austria,Graz,GRZ
+Austria,Innsbruck,INN
+Austria,Klagenfurt,KLU
+Austria,Linz,LNZ
+Austria,Salzburg,SZG
+Austria,Vienna,VIE
+Belgium,Brussels,BRU
+Belgium,Brussels South Charleroi ,CRL
+Bulgaria,Sofia,SOF
+Croatia,Dubrovnik,DBV
+Croatia,Pula,PUY
+Croatia,Split ,SPU
+Croatia,Zadar,ZAD
+Croatia,Zagreb International Airport ,ZAG
+Cyprus,Larnaca,LCA
+Cyprus,Paphos,PFO
+Czech Republic,Prague,PRG
+Denmark,Billund,BLL
+Denmark,Copenhagen,CPH
+Faroe Islands,Vágar,FAE
+Finland,Helsinki,HEL
+Finland,Kittilä,KTT
+Finland,Rovaniemi,RVN
+France,Annecy,NCY
+France,Basel-Mulhouse-Freiburg,BSL/MLH
+France,Chambery ,CMF
+France,Figari,FSC
+France,Lyon,LYS
+France,Nantes,NTE
+France,Nice,NCE
+France,Paris-Ch. De Gaulle,CDG
+France,Paris-Orly,ORY
+Germany,Berlin - Schonefeld,BER
+Germany,Bremen,BRE
+Germany,Cologne,CGN
+Germany,Dresden,DRS
+Germany,Duesseldorf,DUS
+Germany,Erfut,ERF
+Germany,Frankfurt,FRA
+Germany,Hamburg,HAM
+Germany,Hannover,HAJ
+Germany,Leipzig,LEJ
+Germany,Memmingen,FMM
+Germany,Muenster,FMO
+Germany,Munich,MUC
+Germany,Nuremberg,NUE
+Germany,Saarbruecken,SCN
+Germany,Stuttgart,STR
+Greece,Aktion,PVK
+Greece,Athens,ATH
+Greece,Chania,CHQ
+Greece,Chios,JKH
+Greece,Corfu,CFU
+Greece,Heraklion,HER
+Greece,Kalamata,KLX
+Greece,Karpathos,AOK
+Greece,Kefallinia,EFL
+Greece,Kithira,KIT
+Greece,Kos,KGS
+Greece,Lemnos,LXS
+Greece,Mikonos,JMK
+Greece,Paros,PAS
+Greece,Patras,GPA
+Greece,Rhodes,RHO
+Greece,Siteia,JSH
+Greece,Skiathos,JSI
+Greece,Thessalonika,SKG
+Greece,Thira,JTR
+Greece,Volos,VOL
+Greece,Zakinthos,ZTH
+Greenland,Ilulissat Airport,JAV
+Greenland,Kangerlussuaq Airport,SFJ
+Greenland,Nuuk Airport,GOH
+Hungary,Budapest,BUD
+Iceland,Akureyri,AEY
+Iceland,Egilsstadir,EGS
+Iceland,Keflavik,KEF
+Ireland,Dublin,DUB
+Israel,Eilat,ETM
+Israel,Tel Aviv,TLV
+Italy,Bari,BRI
+Italy,Alghero,AHO
+Italy,Bologna,BLQ
+Italy,Brindisi,BDS
+Italy,Cagliari,CAG
+Italy,Catania,CTA
+Italy,Florence,FLR
+Italy,Genova Cristoforo Colombo,GOA
+Italy,Lamezia Terme,SUF
+Italy,Lampedusa,LMP
+Italy,Milan - Linate,LIN
+Italy,Milan - Malpensa,MXP
+Italy,Milan - Orio al Serio,BGY
+Italy,Naples,NAP
+Italy,Olbia Costa Smeralda ,OLB
+Italy,Palermo,PMO
+Italy,Pantelleria,PNL
+Italy,Pisa,PSA
+Italy,Rimini Federico Fellini ,RMI
+Italy,Rome - Ciampino,CIA
+Italy,Rome - Fiumicino,FCO
+Italy,Treviso,TSF
+Italy,Turin,TRN
+Italy,Venice,VCE
+Italy,Verona,VRN
+Jersey,Jersey,JER
+Kosovo,Pristina,PRN
+Latvia,Riga,RIX
+Lithuania,Vilnius,VNO
+Luxembourg,Luxembourg,LUX
+Malta,Luqa,MLA
+Netherlands,Amsterdam,AMS
+Netherlands,Eindhoven,EIN
+Netherlands,Rotterdam,RTM
+Northern Macedonia,Skopje,SKP
+Norway,Ålesund ,AES
+Norway,Alta,ALF
+Norway,Bergen,BGO
+Norway,Bodø,BOO
+Norway,Harstad-Narvik,EVE
+Norway,Haugesund ,HAU
+Norway,Kirkenes,KKN
+Norway,Kristiansund,KSU
+Norway,Kristiandsand ,KRS
+Norway,Molde,MOL
+Norway,Oslo-Gardermoen,OSL
+Norway,Stavanger,SVG
+Norway/Svalbard & Jan Mayen Islands,Svalbard,LYR
+Norway,Torp,TRF
+Norway,Tromsø ,TOS
+Norway,Trondheim,TRD
+Poland,Krakow,KRK
+Poland,Poznan  ,POZ
+Poland,Warsaw Chopina ,WAW
+Portugal,Faro,FAO
+Portugal,Funchal,FNC
+Portugal,Lisbon,LIS
+Portugal,Ponta Delgada,PDL
+Portugal,Porto,OPO
+Russian Federation,Moscow-Domodedovo ,DME
+Russian Federation,Moscow-Sheremetyevo,SVO
+Russian Federation,Moscow-Vnukovo,VKO
+Russian Federation,St. Petersburg,LED
+Slovakia,Bratislava,BTS
+Slovenia,Ljubljana,LJU
+Spain ,Alicante-Elche,ALC
+Spain ,Almeria,LEI
+Spain ,Asturias,OVD
+Spain ,Barcelona El Prat,BCN
+Spain ,Bilbao,BIO
+Spain ,Córdoba,ODB
+Spain ,Murcia,RMU
+Spain ,Fuerteventura,FUE
+Spain ,Gerona,GRO
+Spain ,Gran Canaria,LPA
+Spain ,Granada-Jaen,GRX
+Spain ,Ibiza,IBZ
+Spain ,Jerez,XRY
+Spain ,La Coruna,LCG
+Spain ,La Palma,SPC
+Spain ,Lanzarote,ACE
+Spain ,Madrid Barajas ,MAD
+Spain ,Malaga,AGP
+Spain ,Menorca,MAH
+Spain ,Palma Mallorca,PMI
+Spain ,Pamplona,PNA
+Spain ,Reus,REU
+Spain ,San Sebastian ,EAS
+Spain ,Santander,SDR
+Spain ,Seville,SVQ
+Spain ,Tenerife - Norte ,TFN
+Spain ,Tenerife - Sur,TFS
+Spain ,Valencia,VLC
+Sweden,Ängelholm Helsingborg ,AGH
+Sweden,Åre Östersund,OSD
+Sweden,Arvidsjaur,AJR
+Sweden,Gothenburg,GOT
+Sweden,Kiruna ,KRN
+Sweden,Skellefteå,SFT
+Sweden,Stockholm-Arlanda,ARN
+Sweden,Visby Airport Swedavia ,VBY
+Switzerland,Geneva,GVA
+Switzerland,Zurich,ZRH
+Turkey,Ankara,ESB
+Turkey,Antalya,AYT
+Turkey,Ataturk,ISL
+Turkey,Bodrum,BJV
+Turkey,Dalaman,DLM
+Turkey,Istanbul,IST
+Turkey,Istanbul Sabiha Gökçen,SAW
+Turkey,Izmir,ADB
+Ukraine,Kyiv,KBP
+Ukraine,Zhuliany,IEV
+United Kingdom,Aberdeen,ABZ
+United Kingdom,Belfast- Belfast City,BHD
+United Kingdom,Belfast- Belfast International,BFS
+United Kingdom,Birmingham,BHX
+United Kingdom,Bristol,BRS
+United Kingdom,East Midlands,EMA
+United Kingdom,Edinburgh,EDI
+United Kingdom,Glasgow,GLA
+United Kingdom,Leeds Bradford,LBA
+United Kingdom,Liverpool,LPL
+United Kingdom,London-City,LCY
+United Kingdom,London-Gatwick,LGW
+United Kingdom,London-Heathrow,LHR
+United Kingdom,London-Luton,LTN
+United Kingdom,Manchester,MAN
+United Kingdom,Newcastle,NCL
+United Kingdom,Southampton,SOU
+United Kingdom,Stansted,STN
+Bahrain,Bahrain,BAH
+Egypt,Borg El Arab,HBE
+Egypt,Cairo,CAI
+Egypt,Hurghada ,HRG
+Egypt,Marsa Alam,RMF
+Egypt,Sharm El Sheikh ,SSH
+Egypt,Sohag,HMB
+Ghana,Accra,ACC
+Kuwait,Kuwait,KWI
+Morocco,Casablanca,CMN
+Morocco,Marrakech,RAK
+Morocco,Rabat Salé,RBA
+Qatar,Doha,DIA
+Qatar,Doha,DOH
+Republic of Cape Verde,Aeroporto Internacional Amilcar Cabral,SID
+Republic of Cape Verde,Aeroporto Internacional Aristides Pereira ,BVC
+Republic of Cape Verde,Aeroporto Internacional Nelson Mandela ,RAI
+Saudi Arabia,Abha,AHB
+Saudi Arabia,Al-Ahsa ,HOF
+Saudi Arabia,Arar,RAE
+Saudi Arabia,Buraydah,ELQ
+Saudi Arabia,Dammam,DMM
+Saudi Arabia,Ha'il,HAS
+Saudi Arabia,Jeddah,JED
+Saudi Arabia,Jizan,GIZ
+Saudi Arabia,Medina,MED
+Saudi Arabia,Neom Bay,NUM
+Saudi Arabia,Riyadh,RUH
+Saudi Arabia,Sakakah,AJF
+Saudi Arabia,Tabuk,TUU
+Saudi Arabia,Ta'if,TIF
+Saudi Arabia,Yanbu ,YNB
+Seychelles,Seychelles,SEZ
+South Africa,Cape Town,CPT
+South Africa,Durban,DUR
+South Africa,Johannesburg,JNB
+Sultanate of Oman,Muscat International ,MCT
+Tunisia,Monastir,MIR
+Tunisia,Tunis-Carthage,TUN
+United Arab Emirates,Abu Dhabi,AUH
+United Arab Emirates,Dubai Al Maktoum International,DWC
+United Arab Emirates,Dubai International,DXB
+"China, P.R.",Beijing Capital,PEK
+"China, P.R.",Beijing Daxing,PKX
+"China, P.R.",Changchun,CGQ
+"China, P.R.",Changsha Huanghua,CSX
+"China, P.R.",Chengdu Shuangliu,CTU
+"China, P.R.",Chengdu Tianfu,TFU
+"China, P.R.",Chongqing Jiangbei ,CKG
+"China, P.R.",Dalian Zhoushuizi ,DLC
+"China, P.R.",Fuzhou Changle,FOC
+"China, P.R.",Guangzhou Baiyun,CAN
+"China, P.R.",Guiyang,KWE
+"China, P.R.",Haikou Meilan,HAK
+"China, P.R.",Hangzhou Xiaoshan,HGH
+"China, P.R.",Harbin,HRB
+"China, P.R.",Hohhot,HET
+"China, P.R.",Hulun Buir ,HLD
+"China, P.R.",Jinan,TNA
+"China, P.R.",Kunming Changshui,KMG
+"China, P.R.",Lanzhou,LHW
+"China, P.R.",Nanchang,KHN
+"China, P.R.",Nanjing Lukou,NKG
+"China, P.R.",Nanning,NNG
+"China, P.R.",Qingdao Liuting,TAO
+"China, P.R.",Sanya Fenghuang,SYX
+"China, P.R.",Shanghai Hongqiao,SHA
+"China, P.R.",Shanghai Pudong,PVG
+"China, P.R.",Shenyang,SHE
+"China, P.R.",Shenzhen Bao'an,SZX
+"China, P.R.",Shijiazhuang,SJW
+"China, P.R.",Tianjin Binhai,TSN
+"China, P.R.",Taiyuan,TYN
+"China, P.R.",Urumchi Diwopu,URC
+"China, P.R.",Wuhan Tianhe,WUH
+"China, P.R.",Xi’an Xianyang ,XIY
+"China, P.R.",Xiamen Gaoqi,XMN
+"China, P.R.",Zhengzhou,CGO
+"China, P.R.",Zhuhai,ZUH
+Chinese Taipei,Kaohsiung,KHH
+Chinese Taipei,Taipei,TPE
+"Hong Kong (SAR), China",Hong Kong,HKG
+"Macau (SAR), China",Macau,MFM
+Bermuda,Bermuda,BDA
+Brazil,Aeroporto Internacional de Belém,BEL
+Brazil,Aeroporto Internacional De Brasília ,BSB
+Brazil,Aeroporto Internacional De Campinas - Viracopos ,VCP
+Brazil,Aeroporto Internacional Tancredo Neves ,CNF
+Brazil,Florianopolis,FLN
+Brazil,Fortaleza,FOR
+Brazil,Aeroporto Internacional de Manaus,MAO
+Brazil,Porto Alegre,POA
+Brazil,Recife,REC
+Brazil,Rio de Janeiro,GIG
+Brazil,Rio de Janeiro,SDU
+Brazil,Salvador,SSA
+Brazil,Sao Paulo,GRU
+Brazil,Sao Paulo,CGH
+Brazil,Viracopos,VCP
+Brazil,Campinas,VCP
+Canada,Calgary,YYC
+Canada,Montreal,YUL
+Canada,Quebec,YQB
+Canada,Toronto,YTZ
+Canada,Toronto,YYZ
+Canada,Vancouver,YVR
+Cayman Islands,Grand Cayman,GCM
+Colombia,Bogota,BOG
+Cuba,Havana,HAV
+Cuba,Holguin,HOG
+Cuba,Santa Clara,SNU
+Cuba,Varadero,VRA
+Dominican Republic,Santo Domingo,SDQ
+France (Overseas),Saint Barthélemy,SBH
+Mexico,Mexico City,MEX
+Mexico,Cancun International Airport ,CUN
+Peru,Lima,LIM
+Turks & Caicos Islands,Providenciales International Airport ,PLS
+United States,Atlanta,ATL
+United States,Austin,AUS
+United States,Boston,BOS
+United States,Chicago-O' Hare,ORD
+United States,Dallas,DWF
+United States,Denver,DEN
+United States,Los Angeles,LAX
+United States,Miami,MIA
+United States,New York-J.F. Kennedy,JFK
+United States,Newark,EWR
+United States,Orlando,MCO
+United States,San Diego International Airport,SAN
+United States,San Francisco,SFO
+United States,Seattle-Tacoma International Airport,SEA
+United States,Washington Dulles International Airport,IAD
