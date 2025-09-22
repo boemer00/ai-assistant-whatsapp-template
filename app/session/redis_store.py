@@ -25,23 +25,50 @@ class RedisSessionStore:
         return f"{self.prefix}{user_id}"
 
     def get(self, user_id: str) -> Optional[Dict[str, Any]]:
+        print(f"[DEBUG] RedisStore.get() called for user_id: {user_id}")
         if self.client is None:
-            return self._fallback_store.get(user_id)
+            print(f"[DEBUG] Using fallback store")
+            result = self._fallback_store.get(user_id)
+            print(f"[DEBUG] Fallback store result: {result}")
+            return result
 
         key = self._get_key(user_id)
-        data = self.client.get(key)
-        if data:
-            return json.loads(data)
-        return None
+        print(f"[DEBUG] Redis key: {key}")
+        try:
+            data = self.client.get(key)
+            print(f"[DEBUG] Raw Redis data: {data}")
+            if data:
+                result = json.loads(data)
+                print(f"[DEBUG] Parsed Redis result: {result}")
+                return result
+            print(f"[DEBUG] No data found in Redis for key: {key}")
+            return None
+        except Exception as e:
+            print(f"[DEBUG] Redis get error: {e}")
+            return None
 
     def set(self, user_id: str, session_data: Dict[str, Any]) -> None:
+        print(f"[DEBUG] RedisStore.set() called for user_id: {user_id}")
+        print(f"[DEBUG] Session data to save: {session_data}")
+
         if self.client is None:
+            print(f"[DEBUG] Using fallback store for saving")
             self._fallback_store[user_id] = session_data
+            print(f"[DEBUG] Saved to fallback store")
             return
 
         key = self._get_key(user_id)
-        data = json.dumps(session_data)
-        self.client.setex(key, self.ttl_seconds, data)
+        print(f"[DEBUG] Redis key for save: {key}")
+        try:
+            data = json.dumps(session_data)
+            print(f"[DEBUG] Serialized data: {data}")
+            result = self.client.setex(key, self.ttl_seconds, data)
+            print(f"[DEBUG] Redis setex result: {result}")
+        except Exception as e:
+            print(f"[DEBUG] Redis set error: {e}")
+            # Fallback to in-memory
+            self._fallback_store[user_id] = session_data
+            print(f"[DEBUG] Fell back to in-memory store due to Redis error")
 
     def touch(self, user_id: str) -> None:
         if self.client is None:

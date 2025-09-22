@@ -50,44 +50,68 @@ class SmartConversationHandler:
         }
 
     def handle_message(self, user_id: str, message: str) -> str:
+        print(f"[DEBUG] SmartHandler.handle_message() called with user_id={user_id}, message='{message}'")
+
         # Get or create session
         session = self.session_store.get(user_id) or {"info": {}, "history": [], "preferences": {}}
+        print(f"[DEBUG] Retrieved session: {session}")
 
         # Add message to history
         session["history"].append({"role": "user", "content": message, "timestamp": datetime.now().isoformat()})
 
         # Check if this is a correction/modification
         correction_type = self._detect_correction(message)
+        print(f"[DEBUG] Correction type detected: {correction_type}")
         if correction_type and session.get("info"):
+            print(f"[DEBUG] Handling correction: {correction_type}")
             return self._handle_correction(user_id, session, message, correction_type)
 
         # Extract all entities from message
         entities, confidence = self._extract_with_confidence(message, session)
+        print(f"[DEBUG] Extracted entities: {entities}")
+        print(f"[DEBUG] Confidence scores: {confidence.scores}")
 
         # Merge with existing session info
+        old_info = session["info"].copy()
         session["info"] = self._smart_merge(session["info"], entities)
+        print(f"[DEBUG] Session info before merge: {old_info}")
+        print(f"[DEBUG] Session info after merge: {session['info']}")
+
+        # Save session after update
+        self.session_store.set(user_id, session)
+        print(f"[DEBUG] Session saved to store")
 
         # Check what's missing
         missing_fields = self._get_missing_required_fields(session["info"])
+        print(f"[DEBUG] Missing required fields: {missing_fields}")
 
         # If we have everything, confirm before searching
         if not missing_fields:
+            print(f"[DEBUG] All fields present, checking for confirmation")
             # Check if user already confirmed
             if self._is_confirmation(message):
+                print(f"[DEBUG] Confirmation detected, executing search")
                 return self._execute_search(user_id, session)
             else:
+                print(f"[DEBUG] No confirmation, generating confirmation prompt")
                 # Generate natural confirmation
                 return self._generate_confirmation(session["info"], confidence)
 
         # Ask for missing information naturally
-        return self._ask_for_missing_info(missing_fields, session["info"])
+        print(f"[DEBUG] Missing fields detected, asking for missing info")
+        response = self._ask_for_missing_info(missing_fields, session["info"])
+        print(f"[DEBUG] Response: {response}")
+        return response
 
     def _extract_with_confidence(self, message: str, session: Dict) -> Tuple[Dict, IntentConfidence]:
+        print(f"[DEBUG] _extract_with_confidence() called with message: '{message}'")
         confidence = IntentConfidence()
 
         # Try fast parse first
+        print(f"[DEBUG] Trying fast_parse...")
         intent = fast_parse(message)
         if intent:
+            print(f"[DEBUG] fast_parse SUCCESS: {intent}")
             # High confidence for structured input
             if intent.origin:
                 confidence.add("origin", intent.origin, 0.95)
@@ -100,21 +124,33 @@ class SmartConversationHandler:
             if intent.passengers:
                 confidence.add("passengers", intent.passengers, 0.95)
         else:
+            print(f"[DEBUG] fast_parse FAILED, falling back to LLM...")
             # Use LLM for natural language
-            intent = extract_intent(self.llm, message)
-            # Lower confidence for LLM extraction
-            if intent.origin:
-                confidence.add("origin", intent.origin, 0.8)
-            if intent.destination:
-                confidence.add("destination", intent.destination, 0.8)
-            if intent.departure_date:
-                confidence.add("departure_date", intent.departure_date, 0.7)
-            if intent.return_date:
-                confidence.add("return_date", intent.return_date, 0.7)
-            if intent.passengers:
-                confidence.add("passengers", intent.passengers or 1, 0.85)
+            if self.llm:
+                print(f"[DEBUG] Calling extract_intent with LLM...")
+                intent = extract_intent(self.llm, message)
+                print(f"[DEBUG] LLM extract_intent result: {intent}")
+                # Lower confidence for LLM extraction
+                if intent.origin:
+                    confidence.add("origin", intent.origin, 0.8)
+                    print(f"[DEBUG] Added origin: {intent.origin}")
+                if intent.destination:
+                    confidence.add("destination", intent.destination, 0.8)
+                    print(f"[DEBUG] Added destination: {intent.destination}")
+                if intent.departure_date:
+                    confidence.add("departure_date", intent.departure_date, 0.7)
+                    print(f"[DEBUG] Added departure_date: {intent.departure_date}")
+                if intent.return_date:
+                    confidence.add("return_date", intent.return_date, 0.7)
+                    print(f"[DEBUG] Added return_date: {intent.return_date}")
+                if intent.passengers:
+                    confidence.add("passengers", intent.passengers or 1, 0.85)
+                    print(f"[DEBUG] Added passengers: {intent.passengers or 1}")
+            else:
+                print(f"[DEBUG] No LLM available for extraction")
 
         entities = {k: v["value"] for k, v in confidence.scores.items()}
+        print(f"[DEBUG] Final extracted entities: {entities}")
         return entities, confidence
 
     def _smart_merge(self, existing: Dict, new: Dict) -> Dict:
@@ -165,11 +201,17 @@ class SmartConversationHandler:
         return "I didn't quite catch that. Could you clarify what you'd like to change?"
 
     def _is_confirmation(self, message: str) -> bool:
-        return bool(self.correction_patterns["confirm"].search(message))
+        result = bool(self.correction_patterns["confirm"].search(message))
+        print(f"[DEBUG] _is_confirmation('{message}') = {result}")
+        return result
 
     def _generate_confirmation(self, info: Dict, confidence: IntentConfidence) -> str:
+        print(f"[DEBUG] _generate_confirmation() called with info: {info}")
+        print(f"[DEBUG] Confidence scores: {confidence.scores}")
+
         # Check if any fields need clarification
         uncertain_fields = confidence.needs_confirmation()
+        print(f"[DEBUG] Uncertain fields (need clarification): {uncertain_fields}")
 
         if uncertain_fields:
             # Ask about uncertain fields
@@ -180,7 +222,9 @@ class SmartConversationHandler:
             }
             for field in uncertain_fields:
                 if field in field_questions:
-                    return field_questions[field]
+                    question = field_questions[field]
+                    print(f"[DEBUG] Returning clarification question: {question}")
+                    return question
 
         # Generate natural confirmation
         parts = [f"Perfect! Let me search for flights from {info['origin']} to {info['destination']}"]
@@ -190,7 +234,9 @@ class SmartConversationHandler:
         if info.get('passengers', 1) > 1:
             parts.append(f"for {info['passengers']} passengers")
 
-        return " ".join(parts) + ". Shall I proceed?"
+        confirmation = " ".join(parts) + ". Shall I proceed?"
+        print(f"[DEBUG] Generated confirmation: {confirmation}")
+        return confirmation
 
     def _ask_for_missing_info(self, missing: List[str], info: Dict) -> str:
         # Generate natural prompts for missing info
@@ -220,7 +266,18 @@ class SmartConversationHandler:
         return prompts.get(missing[0], "Could you provide more details about your trip?")
 
     def _execute_search(self, user_id: str, session: Dict) -> str:
+        print(f"[DEBUG] _execute_search() called for user_id: {user_id}")
         info = session["info"]
+        print(f"[DEBUG] Search info: {info}")
+
+        # Validate required fields are present
+        required_fields = ["origin", "destination", "departure_date"]
+        missing = [field for field in required_fields if not info.get(field)]
+        if missing:
+            print(f"[DEBUG] ERROR: Missing required fields for search: {missing}")
+            return f"Sorry, I'm missing some information: {', '.join(missing)}. Please provide these details."
+
+        print(f"[DEBUG] All required fields present, proceeding with search")
 
         # Check cache first
         cache_key = self.session_store.create_search_key(
@@ -230,6 +287,7 @@ class SmartConversationHandler:
             info.get("return_date"),
             info.get("passengers", 1)
         )
+        print(f"[DEBUG] Cache key: {cache_key}")
         cached_results = self.session_store.get_cached_search(cache_key)
 
         if cached_results:
