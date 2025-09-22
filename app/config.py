@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: str
     TWILIO_WHATSAPP_NUMBER: str
 
+    # Redis
+    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_TTL_SECONDS: int = 900  # 15 minutes session TTL
+    REDIS_CACHE_TTL_SECONDS: int = 3600  # 1 hour cache TTL for flight searches
+
     # read .env and ignore any extra keys so this doesn't break again
     model_config = SettingsConfigDict(
         env_file=".env",

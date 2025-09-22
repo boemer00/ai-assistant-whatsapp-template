@@ -35,7 +35,13 @@ def extract_intent(llm: ChatOpenAI, text: str) -> IntentSchema:
     # simple safety: parse JSON
     import json
     try:
-        data = json.loads(res.content)
+        content = res.content.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+        if content.endswith("```"):
+            content = content[:-3]
+        content = content.strip()
+        data = json.loads(content)
         print(f"[DEBUG] Parsed JSON: {data}")
     except Exception as e:
         print(f"[DEBUG] JSON parse error: {e}")

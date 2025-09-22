@@ -3,6 +3,7 @@ uvicorn[standard]
 python-dotenv
 pydantic
 pydantic-settings>=2.4
+pytz==2025.2
 pandas
 langchain
 langchain-openai
@@ -10,3 +11,5 @@ httpx
 twilio
 dateparser
 python-multipart
+redis>=5.0.0
+hiredis>=2.2.0
