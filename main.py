@@ -68,9 +68,9 @@ async def lifespan(app: FastAPI):
         app.state.amadeus._get_token()
         print("[INFO] Warmed Amadeus token")
 
-        # Pre-warm popular route caches (run in background)
-        asyncio.create_task(app.state.cache_manager.warm_popular_routes(days_ahead=7))
-        print("[INFO] Started cache warming for popular routes")
+        # Pre-warm popular route caches (run in background, limited to avoid rate limits)
+        asyncio.create_task(app.state.cache_manager.warm_popular_routes(days_ahead=3))
+        print("[INFO] Started cache warming for popular routes (rate-limited)")
     except Exception as e:
         print(f"[WARNING] Service warming failed: {e}")
 
@@ -180,10 +180,10 @@ async def whatsapp_webhook(
     message = Body.strip()
 
     # Log event
-    log_event("webhook_received", {
-        "from": phone_number,
-        "message_length": len(message)
-    })
+    log_event("webhook_received",
+        from_number=phone_number,
+        message_length=len(message)
+    )
 
     # Check if user needs welcome message
     user_prefs = request.app.state.user_prefs
@@ -222,7 +222,7 @@ async def whatsapp_webhook(
             request.app.state.redis_store.set(phone_number, session)
 
     except Exception as e:
-        log_event("webhook_error", {"error": str(e)})
+        log_event("webhook_error", error=str(e))
         response = request.app.state.formatter.format_error_friendly("general")
 
     # Convert to TwiML

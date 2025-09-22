@@ -1,6 +1,6 @@
 import json
 import hashlib
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Tuple, List
 from datetime import datetime, timedelta
 import asyncio
 from app.session.redis_store import RedisSessionStore
@@ -27,6 +27,7 @@ class FlightCacheManager:
             ("CHI", "NYC"), ("NYC", "CHI"),  # Chicago-NYC
             ("LON", "DUB"), ("DUB", "LON"),  # London-Dublin
             ("NYC", "TOR"), ("TOR", "NYC"),  # NYC-Toronto
+            ("GRU", "NYC"), ("NYC", "GRU"),  # Sao Paulo-NYC
         ]
 
     def create_cache_key(self, origin: str, destination: str, dep_date: str,
@@ -101,34 +102,44 @@ class FlightCacheManager:
         age = datetime.now() - cached_time
         return age < timedelta(minutes=max_age_minutes)
 
-    async def warm_popular_routes(self, days_ahead: int = 7):
-        # Pre-warm cache with popular routes
+    async def warm_popular_routes(self, days_ahead: int = 3):
+        # Pre-warm cache with popular routes (reduced days to avoid rate limits)
         base_date = datetime.now()
-        tasks = []
 
-        for origin, destination in self.popular_routes:
+        # Only warm most important routes to avoid rate limits
+        priority_routes = self.popular_routes[:5]  # Top 5 routes only
+
+        successful = 0
+        total = 0
+
+        for origin, destination in priority_routes:
             for day_offset in range(days_ahead):
                 dep_date = (base_date + timedelta(days=day_offset)).strftime("%Y-%m-%d")
-                tasks.append(self._warm_single_route(origin, destination, dep_date))
+                total += 1
+                try:
+                    await self._warm_single_route(origin, destination, dep_date)
+                    successful += 1
+                    # Add delay to respect rate limits
+                    await asyncio.sleep(2)  # 2 second delay between requests
+                except Exception as e:
+                    print(f"[Cache] Skipping {origin}-{destination} on {dep_date}: rate limited")
+                    # If we hit rate limits, skip remaining for this route
+                    break
 
-        # Limit concurrent warming to avoid overwhelming the API
-        semaphore = asyncio.Semaphore(3)
-        async def limited_warm(task):
-            async with semaphore:
-                return await task
-
-        results = await asyncio.gather(*[limited_warm(task) for task in tasks],
-                                      return_exceptions=True)
-
-        successful = sum(1 for r in results if not isinstance(r, Exception))
-        print(f"[Cache] Warmed {successful}/{len(tasks)} routes")
+        print(f"[Cache] Warmed {successful}/{total} routes")
 
     async def _warm_single_route(self, origin: str, destination: str, dep_date: str):
         try:
             await self.get_cached_or_fetch(origin, destination, dep_date)
             return True
         except Exception as e:
-            print(f"[Cache] Failed to warm {origin}-{destination} on {dep_date}: {e}")
+            error_msg = str(e)
+            # If rate limited, don't log the full error
+            if "429" in error_msg or "Too Many Requests" in error_msg:
+                print(f"[Cache] Rate limited for {origin}-{destination}, skipping remaining...")
+                raise e  # Re-raise to break the warming loop for this route
+            else:
+                print(f"[Cache] Failed to warm {origin}-{destination} on {dep_date}: {e}")
             return False
 
     def invalidate_route(self, origin: str, destination: str):
