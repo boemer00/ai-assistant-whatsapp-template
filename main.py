@@ -1,6 +1,7 @@
 import os
+import time
 from fastapi import FastAPI, Form, Request, BackgroundTasks
-from fastapi.responses import PlainTextResponse, Response
+from fastapi.responses import PlainTextResponse, Response, JSONResponse
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
@@ -12,6 +13,10 @@ from app.amadeus.client import AmadeusClient
 from app.amadeus.transform import from_amadeus
 from app.rank.selector import rank_top
 from app.formatters.whatsapp import format_reply
+from app.obs.middleware import ObservabilityMiddleware
+from app.obs.metrics import get_metrics_snapshot, record_timing
+from app.obs.logger import log_event
+from app.obs.context import from_var, message_sid_var
 
 load_dotenv()
 app = FastAPI(title="Travel WhatsApp Agent")
@@ -33,6 +38,11 @@ def warm_amadeus_token():
 def health():
     return {"ok": True}
 
+@app.get("/metrics")
+def metrics():
+    """Lightweight JSON metrics snapshot for local inspection."""
+    return JSONResponse(get_metrics_snapshot())
+
 @app.post("/whatsapp/webhook")
 async def whatsapp_webhook(
     request: Request,
@@ -43,9 +53,19 @@ async def whatsapp_webhook(
 ):
     text = Body.strip()
     print(f"[DEBUG] Received message: {text}")
+    # Attach minimal context
+    try:
+        from_var.set(From)
+    except Exception:
+        pass
+    log_event("webhook_received", route="/whatsapp/webhook")
 
     # 1) Extract intent (fast regex first, fallback to LLM)
-    intent_raw = fast_parse(text) or extract_intent(LLM, text)
+    intent_raw = fast_parse(text)
+    if not intent_raw:
+        t0 = time.monotonic()
+        intent_raw = extract_intent(LLM, text)
+        record_timing("llm_latency_ms", (time.monotonic() - t0) * 1000.0)
     print(f"[DEBUG] Extracted intent: origin={intent_raw.origin}, dest={intent_raw.destination}, "
           f"dep_date={intent_raw.departure_date}, ret_date={intent_raw.return_date}, "
           f"passengers={intent_raw.passengers}")
@@ -81,6 +101,7 @@ async def whatsapp_webhook(
     def _do_search_and_reply():
         try:
             print(f"[DEBUG] Calling Amadeus API: {origin_code} -> {destination_code} on {intent_raw.departure_date}")
+            t0 = time.monotonic()
             data = AMA.search_flights(
                 origin=origin_code,
                 destination=destination_code,
@@ -88,13 +109,16 @@ async def whatsapp_webhook(
                 ret_date=intent_raw.return_date,
                 adults=int(intent_raw.passengers or 1),
             )
+            record_timing("amadeus_latency_ms", (time.monotonic() - t0) * 1000.0)
             options = from_amadeus(data)
             print(f"[DEBUG] Amadeus returned {len(options)} flight options")
             ranked = rank_top(options)
             msg = format_reply(intent_raw, ranked)
+            log_event("amadeus_search", status="ok", options=len(options))
         except Exception as e:
             print(f"[DEBUG] Amadeus API error (bg): {e}")
             msg = f"Sorry, I couldn't search flights at this time. Error: {str(e)}"
+            log_event("amadeus_search", level="ERROR", error=str(e))
         from app.utils.twilio import send_whatsapp_message
         # Send to the original sender
         send_whatsapp_message(From.replace("whatsapp:", ""), msg)
@@ -104,3 +128,6 @@ async def whatsapp_webhook(
     from app.utils.twilio import to_twiml_message
     xml = to_twiml_message("Searching… ✈️ I’ll send the results shortly.")
     return Response(content=xml, media_type="application/xml")
+
+# Wrap app with observability middleware after routes are defined
+app = ObservabilityMiddleware(app)
