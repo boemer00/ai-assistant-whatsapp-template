@@ -41,16 +41,23 @@ class SmartConversationHandler:
 
     def _compile_correction_patterns(self) -> Dict[str, re.Pattern]:
         return {
+            # Add date correction pattern BEFORE cancel to catch "no, on the 26" first
+            "date_correction": re.compile(r"^no,?\s+(?:on\s+)?(?:the\s+)?(\d+(?:st|nd|rd|th)?|\w+\s+\d+|september\s+\d+|sep\s+\d+)", re.I),
             "change_destination": re.compile(r"(?:change|make|switch).*(?:to|destination).*(\w+)", re.I),
-            "change_date": re.compile(r"(?:change|make|switch).*(?:date|day).*(\d+|\w+)", re.I),
+            "change_date": re.compile(r"(?:change|make|switch|actually).*(?:date|day).*(\d+|\w+)", re.I),
             "change_passengers": re.compile(r"(?:change|make|now).*(\d+).*(?:people|passengers|adults)", re.I),
             "add_return": re.compile(r"(?:add|include|with).*return.*(\d+|\w+)", re.I),
             "confirm": re.compile(r"^(?:yes|yep|yeah|correct|perfect|looks good|confirm)", re.I),
-            "cancel": re.compile(r"^(?:no|cancel|stop|nevermind|forget it)", re.I),
+            # Updated cancel pattern - only match standalone "no" or clear cancellation phrases
+            "cancel": re.compile(r"^(?:no\s*$|cancel|stop|nevermind|forget it)", re.I),
         }
 
     def handle_message(self, user_id: str, message: str) -> str:
         print(f"[DEBUG] SmartHandler.handle_message() called with user_id={user_id}, message='{message}'")
+
+        # Check for greeting first
+        if self._is_greeting(message):
+            return self._format_greeting()
 
         # Get or create session
         session = self.session_store.get(user_id) or {"info": {}, "history": [], "preferences": {}}
@@ -174,7 +181,22 @@ class SmartConversationHandler:
     def _handle_correction(self, user_id: str, session: Dict, message: str, correction_type: str) -> str:
         info = session["info"]
 
-        if correction_type == "change_destination":
+        if correction_type == "date_correction":
+            # Handle "no, on the 26" type corrections
+            match = self.correction_patterns["date_correction"].search(message)
+            if match:
+                date_str = match.group(1)
+                # Parse the date
+                from app.utils.dates import to_iso_date
+                new_date = to_iso_date(date_str)
+                if new_date:
+                    info["departure_date"] = new_date
+                    self.session_store.set(user_id, session)
+                    return f"Got it! Changed the date to {new_date}. Ready to search?"
+                else:
+                    return f"I couldn't understand that date. Could you provide it in a format like 'Sep 26' or '2025-09-26'?"
+
+        elif correction_type == "change_destination":
             match = self.correction_patterns["change_destination"].search(message)
             if match:
                 new_dest = match.group(1).upper()
@@ -199,6 +221,26 @@ class SmartConversationHandler:
             return "No problem! Search cancelled. How else can I help you?"
 
         return "I didn't quite catch that. Could you clarify what you'd like to change?"
+
+    def _is_greeting(self, message: str) -> bool:
+        """Check if message is a greeting."""
+        greeting_pattern = re.compile(
+            r'^(hi|hello|hey|good\s+(morning|afternoon|evening)|greetings?|howdy)(?:\s|!|\.)?$',
+            re.IGNORECASE
+        )
+        return bool(greeting_pattern.search(message.strip()))
+
+    def _format_greeting(self) -> str:
+        """Return a friendly greeting response."""
+        hour = datetime.now().hour
+        if hour < 12:
+            time_greeting = "Good morning!"
+        elif hour < 17:
+            time_greeting = "Good afternoon!"
+        else:
+            time_greeting = "Good evening!"
+
+        return f"{time_greeting} ✈️ I'm here to help you find the perfect flight. Where would you like to go today?"
 
     def _is_confirmation(self, message: str) -> bool:
         result = bool(self.correction_patterns["confirm"].search(message))
@@ -294,11 +336,8 @@ class SmartConversationHandler:
             # Return cached results immediately
             return self._format_results(cached_results, info, from_cache=True)
 
-        # Mark session as searching
-        session["searching"] = True
-        self.session_store.set(user_id, session)
-
-        # Execute search
+        # Execute search synchronously and return results directly
+        # REMOVED: session["searching"] = True to prevent async conflict
         try:
             results = self.amadeus_client.search_flights(
                 origin=info["origin"],
