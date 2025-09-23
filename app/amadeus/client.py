@@ -67,7 +67,9 @@ class AmadeusClient:
 
     def search_flights(self, origin: str, destination: str, dep_date: str,
                        ret_date: str | None, adults: int = 1) -> Dict[str, Any]:
+        print(f"[DEBUG] Amadeus search_flights called with: origin={origin}, destination={destination}, dep_date={dep_date}, ret_date={ret_date}, adults={adults}")
         token = self._get_token()
+        print(f"[DEBUG] Amadeus token obtained successfully")
 
         # Structured body per current Amadeus Flight Offers Search schema
         body = {
@@ -88,6 +90,9 @@ class AmadeusClient:
             "Content-Type": "application/json",
         }
 
+        print(f"[DEBUG] Amadeus request body: {body}")
+        print(f"[DEBUG] Amadeus request URL: {BASE}/v2/shopping/flight-offers")
+
         # Single retry with short backoff, and extended read-timeout for background flow
         attempt = 0
         last_err = None
@@ -99,9 +104,15 @@ class AmadeusClient:
                     headers=headers,
                     timeout=httpx.Timeout(connect=3.0, read=45.0, write=45.0, pool=12.0),
                 )
+                print(f"[DEBUG] Amadeus response status: {r.status_code}")
+                if r.status_code != 200:
+                    print(f"[DEBUG] Amadeus error response: {r.text}")
                 r.raise_for_status()
-                return r.json()
+                response_data = r.json()
+                print(f"[DEBUG] Amadeus successful response with {len(response_data.get('data', []))} offers")
+                return response_data
             except httpx.HTTPStatusError as e:
+                print(f"[ERROR] Amadeus HTTP error: {e.response.status_code} - {e.response.text}")
                 # Retry once only for 5xx
                 if 500 <= e.response.status_code < 600 and attempt == 0:
                     attempt += 1
@@ -110,6 +121,7 @@ class AmadeusClient:
                     continue
                 raise
             except (httpx.ReadTimeout, httpx.ConnectTimeout, httpx.RemoteProtocolError) as e:
+                print(f"[ERROR] Amadeus connection error: {type(e).__name__}: {str(e)}")
                 if attempt == 0:
                     attempt += 1
                     time.sleep(1.5)

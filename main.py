@@ -36,7 +36,11 @@ async def lifespan(app: FastAPI):
     app.state.redis_store = RedisSessionStore()
     app.state.amadeus = AmadeusClient()
     app.state.iata = IATADb(csv_path="data/iata/iata_codes_19_sep.csv")
-    app.state.llm = ChatOpenAI(model=settings.OPENAI_MODEL, temperature=0)
+    app.state.llm = ChatOpenAI(
+        model=settings.OPENAI_MODEL,
+        temperature=0,
+        api_key=settings.OPENAI_API_KEY
+    )
 
     # Initialize managers
     app.state.cache_manager = FlightCacheManager(app.state.redis_store, app.state.amadeus)
@@ -48,7 +52,8 @@ async def lifespan(app: FastAPI):
     app.state.conversation = SmartConversationHandler(
         session_store=app.state.redis_store,
         amadeus_client=app.state.amadeus,
-        llm=app.state.llm
+        llm=app.state.llm,
+        iata_db=app.state.iata
     )
 
     # Initialize async handler

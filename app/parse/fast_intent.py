@@ -15,24 +15,34 @@ PATTERNS = [
         r"^\s*(?P<orig>[A-Za-z\s]{2,}|[A-Za-z]{3})\s+to\s+(?P<dest>[A-Za-z\s]{2,}|[A-Za-z]{3})\s+(?:one\-?way\s+)?on\s+(?P<dep>\d{4}-\d{2}-\d{2})(?:\s*,?\s*(?P<pax>\d+)\s+adult(?:s)?)?\s*$",
         re.IGNORECASE,
     ),
+    # NEW ULTRA-FLEXIBLE: "I would like to go from NYC to London next Friday, 2 people, please."
+    re.compile(
+        r".*(?:would\s+like\s+to\s+go\s+|want\s+to\s+(?:fly|travel|go)\s+)?from\s+(?P<orig>NYC|London|Paris|Tokyo|[A-Z]{3}|[A-Z][a-z]+)\s+to\s+(?P<dest>NYC|London|Paris|Tokyo|[A-Z]{3}|[A-Z][a-z]+)\s+(?P<dep>next\s+\w+|tomorrow|today|this\s+\w+).*?(?P<pax>\d+)\s+(?:people|person|passengers?|adults?|travell?ers?).*",
+        re.IGNORECASE,
+    ),
+    # NEW FLEXIBLE: "I want to fly from NYC to London next Friday"
+    re.compile(
+        r".*(?:want\s+to\s+|going\s+to\s+|plan\s+to\s+)(?:fly|travel|go)\s+from\s+(?P<orig>NYC|London|Paris|Tokyo|[A-Z]{3}|[A-Z][a-z]+)\s+to\s+(?P<dest>NYC|London|Paris|Tokyo|[A-Z]{3}|[A-Z][a-z]+)\s+(?P<dep>next\s+\w+|tomorrow|today|this\s+\w+).*",
+        re.IGNORECASE,
+    ),
     # NEW: e.g., "NYC to London tomorrow, 2 people"
     re.compile(
-        r"^\s*(?:from\s+)?(?P<orig>[A-Za-z\s]{2,}|[A-Za-z]{3})\s+to\s+(?P<dest>[A-Za-z\s]{2,}|[A-Za-z]{3})\s+(?P<dep>tomorrow|today|yesterday|next\s+\w+|this\s+\w+|\w+day|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}-\d{1,2}-\d{2,4}|\w+\s+\d{1,2})(?:\s*,?\s*(?P<pax>\d+)\s+(?:people|person|passengers?|adults?|travell?ers?))?\s*$",
+        r"^\s*(?:from\s+)?(?P<orig>[A-Za-z]{3}|[A-Za-z\s]+?)\s+to\s+(?P<dest>[A-Za-z]{3}|[A-Za-z\s]+?)\s+(?P<dep>tomorrow|today|yesterday|next\s+\w+|this\s+\w+|\w+day|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}-\d{1,2}-\d{2,4}|\w+\s+\d{1,2})(?:\s*,?\s*(?P<pax>\d+)\s+(?:people|person|passengers?|adults?|travell?ers?))?\s*$",
         re.IGNORECASE,
     ),
     # NEW: e.g., "from NYC to London next Friday"
     re.compile(
-        r"^\s*from\s+(?P<orig>[A-Za-z\s]{2,}|[A-Za-z]{3})\s+to\s+(?P<dest>[A-Za-z\s]{2,}|[A-Za-z]{3})(?:\s+(?P<dep>tomorrow|today|yesterday|next\s+\w+|this\s+\w+|\w+day|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}-\d{1,2}-\d{2,4}|\w+\s+\d{1,2}))?(?:\s*,?\s*(?P<pax>\d+)\s+(?:people|person|passengers?|adults?|travell?ers?))?\s*$",
+        r"^\s*from\s+(?P<orig>[A-Za-z]{3}|[A-Za-z\s]+?)\s+to\s+(?P<dest>[A-Za-z]{3}|[A-Za-z\s]+?)(?:\s+(?P<dep>tomorrow|today|yesterday|next\s+\w+|this\s+\w+|\w+day|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}-\d{1,2}-\d{2,4}|\w+\s+\d{1,2}))?(?:\s*,?\s*(?P<pax>\d+)\s+(?:people|person|passengers?|adults?|travell?ers?))?\s*$",
         re.IGNORECASE,
     ),
     # NEW: e.g., "fly from NYC to London"
     re.compile(
-        r"^\s*(?:fly|flight|book)\s+from\s+(?P<orig>[A-Za-z\s]{2,}|[A-Za-z]{3})\s+to\s+(?P<dest>[A-Za-z\s]{2,}|[A-Za-z]{3})(?:\s+(?P<dep>tomorrow|today|yesterday|next\s+\w+|this\s+\w+|\w+day|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}-\d{1,2}-\d{2,4}|\w+\s+\d{1,2}))?(?:\s*,?\s*(?P<pax>\d+)\s+(?:people|person|passengers?|adults?|travell?ers?))?\s*$",
+        r"^\s*(?:fly|flight|book)\s+from\s+(?P<orig>[A-Za-z]{3}|[A-Za-z\s]+?)\s+to\s+(?P<dest>[A-Za-z]{3}|[A-Za-z\s]+?)(?:\s+(?P<dep>tomorrow|today|yesterday|next\s+\w+|this\s+\w+|\w+day|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}-\d{1,2}-\d{2,4}|\w+\s+\d{1,2}))?(?:\s*,?\s*(?P<pax>\d+)\s+(?:people|person|passengers?|adults?|travell?ers?))?\s*$",
         re.IGNORECASE,
     ),
     # NEW: e.g., "NYC → London tomorrow"
     re.compile(
-        r"^\s*(?P<orig>[A-Za-z\s]{2,}|[A-Za-z]{3})\s*(?:→|->|to)\s*(?P<dest>[A-Za-z\s]{2,}|[A-Za-z]{3})(?:\s+(?P<dep>tomorrow|today|yesterday|next\s+\w+|this\s+\w+|\w+day|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}-\d{1,2}-\d{2,4}|\w+\s+\d{1,2}))?(?:\s*,?\s*(?P<pax>\d+)\s+(?:people|person|passengers?|adults?|travell?ers?))?\s*$",
+        r"^\s*(?P<orig>[A-Za-z]{3}|[A-Za-z\s]+?)\s*(?:→|->|to)\s*(?P<dest>[A-Za-z]{3}|[A-Za-z\s]+?)(?:\s+(?P<dep>tomorrow|today|yesterday|next\s+\w+|this\s+\w+|\w+day|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}-\d{1,2}-\d{2,4}|\w+\s+\d{1,2}))?(?:\s*,?\s*(?P<pax>\d+)\s+(?:people|person|passengers?|adults?|travell?ers?))?\s*$",
         re.IGNORECASE,
     ),
 ]

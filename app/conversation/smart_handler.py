@@ -32,11 +32,13 @@ class SmartConversationHandler:
         self,
         session_store: RedisSessionStore,
         amadeus_client: AmadeusClient,
-        llm: ChatOpenAI = None
+        llm: ChatOpenAI = None,
+        iata_db=None
     ):
         self.session_store = session_store
         self.amadeus_client = amadeus_client
         self.llm = llm
+        self.iata_db = iata_db
         self.correction_patterns = self._compile_correction_patterns()
 
     def _compile_correction_patterns(self) -> Dict[str, re.Pattern]:
@@ -307,6 +309,26 @@ class SmartConversationHandler:
         # Default to first missing field
         return prompts.get(missing[0], "Could you provide more details about your trip?")
 
+    def _resolve_airport_code(self, location: str) -> str:
+        """Resolve a location to the best IATA airport code."""
+        if not self.iata_db:
+            print(f"[WARNING] No IATA database available, using location as-is: {location}")
+            return location
+
+        codes = self.iata_db.resolve(location)
+        if not codes:
+            print(f"[WARNING] Could not resolve location '{location}' to IATA code, using as-is")
+            return location
+
+        # Use the first/primary airport code
+        resolved = codes[0]
+        if len(codes) > 1:
+            print(f"[DEBUG] Resolved '{location}' to {resolved} (alternatives: {codes[1:]})")
+        else:
+            print(f"[DEBUG] Resolved '{location}' to {resolved}")
+
+        return resolved
+
     def _execute_search(self, user_id: str, session: Dict) -> str:
         print(f"[DEBUG] _execute_search() called for user_id: {user_id}")
         info = session["info"]
@@ -321,10 +343,14 @@ class SmartConversationHandler:
 
         print(f"[DEBUG] All required fields present, proceeding with search")
 
+        # Resolve airport codes before search
+        origin_code = self._resolve_airport_code(info["origin"])
+        destination_code = self._resolve_airport_code(info["destination"])
+
         # Check cache first
         cache_key = self.session_store.create_search_key(
-            info["origin"],
-            info["destination"],
+            origin_code,
+            destination_code,
             info["departure_date"],
             info.get("return_date"),
             info.get("passengers", 1)
@@ -340,8 +366,8 @@ class SmartConversationHandler:
         # REMOVED: session["searching"] = True to prevent async conflict
         try:
             results = self.amadeus_client.search_flights(
-                origin=info["origin"],
-                destination=info["destination"],
+                origin=origin_code,
+                destination=destination_code,
                 dep_date=info["departure_date"],
                 ret_date=info.get("return_date"),
                 adults=info.get("passengers", 1)
@@ -362,7 +388,10 @@ class SmartConversationHandler:
             return format_reply(IntentSchema(**info), ranked)
 
         except Exception as e:
-            return f"I'm having trouble searching flights right now. Could you try again in a moment?"
+            print(f"[ERROR] Flight search failed: {type(e).__name__}: {str(e)}")
+            import traceback
+            print(f"[ERROR] Full traceback: {traceback.format_exc()}")
+            return f"I'm having trouble searching flights right now ({type(e).__name__}). Could you try again in a moment?"
 
     def _format_results(self, results: Any, info: Dict, from_cache: bool = False) -> str:
         from app.amadeus.transform import from_amadeus
