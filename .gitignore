@@ -142,3 +142,10 @@ $RECYCLE.BIN/
 # System files
 *.swp
 *.swo
+
+# artificial intelligence files
+.claude/
+.openai/
+
+# chat history
+.chat/

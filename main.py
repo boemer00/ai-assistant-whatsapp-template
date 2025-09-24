@@ -12,7 +12,7 @@ from app.amadeus.client import AmadeusClient
 
 # New imports for refactored components
 from app.session.redis_store import RedisSessionStore
-from app.conversation.smart_handler import SmartConversationHandler
+from app.conversation.conversational_handler import ConversationalHandler
 from app.cache.flight_cache import FlightCacheManager
 from app.async_handler import AsyncFlightSearchHandler, BackgroundTaskManager
 from app.user.preferences import UserPreferenceManager
@@ -49,10 +49,11 @@ async def lifespan(app: FastAPI):
     app.state.formatter = NaturalFormatter()
 
     # Initialize conversation handler
-    app.state.conversation = SmartConversationHandler(
+    app.state.conversation = ConversationalHandler(
         session_store=app.state.redis_store,
-        amadeus_client=app.state.amadeus,
         llm=app.state.llm,
+        amadeus_client=app.state.amadeus,
+        user_preferences=app.state.user_prefs,
         iata_db=app.state.iata
     )
 
@@ -153,14 +154,20 @@ async def detailed_health(request: Request):
 
 @app.get("/metrics")
 async def metrics(request: Request):
-    cache_stats = request.app.state.cache_manager.get_cache_stats()
-    breaker_state = request.app.state.amadeus_breaker.get_state()
+    from app.obs.metrics import get_metrics_snapshot
+    # Guard against missing state when app is wrapped by middleware in tests
+    cache_stats = getattr(request.app.state, "cache_manager", None)
+    cache_stats = cache_stats.get_cache_stats() if cache_stats else {"hits": 0, "misses": 0, "hit_rate": "0.0%", "popular_routes": 0}
+    breaker = getattr(request.app.state, "amadeus_breaker", None)
+    breaker_state = breaker.get_state() if breaker else {"name": "amadeus_api", "state": "closed", "failure_count": 0, "last_failure": None}
 
-    return {
+    snapshot = get_metrics_snapshot()
+    snapshot.update({
         "cache": cache_stats,
         "circuit_breaker": breaker_state,
-        "active_tasks": len(request.app.state.task_manager.tasks),
-    }
+        "active_tasks": len(getattr(request.app.state, "task_manager", type("T", (), {"tasks": {}})()).tasks),
+    })
+    return snapshot
 
 
 @app.post("/whatsapp/webhook")
@@ -169,7 +176,8 @@ async def whatsapp_webhook(
     background_tasks: BackgroundTasks,
     Body: str = Form(...),
     From: str = Form(...),
-    To: str = Form(...)
+    To: str = Form(...),
+    MessageSid: str | None = Form(None),
 ):
     # Validate request
     valid, error = RequestValidator.validate_whatsapp_message({
@@ -185,9 +193,11 @@ async def whatsapp_webhook(
     message = Body.strip()
 
     # Log event
-    log_event("webhook_received",
+    log_event(
+        "webhook_received",
         from_number=phone_number,
-        message_length=len(message)
+        message_length=len(message),
+        message_sid=MessageSid,
     )
 
     # Check if user needs welcome message
@@ -234,7 +244,8 @@ async def whatsapp_webhook(
     from app.utils.twilio import to_twiml_message
     xml = to_twiml_message(response)
 
-    return Response(content=xml, media_type="application/xml")
+    # Twilio accepts both application/xml and text/xml; prefer text/xml per docs
+    return Response(content=xml, media_type="text/xml")
 
 
 @app.post("/admin/cache/warm")
