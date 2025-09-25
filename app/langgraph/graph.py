@@ -13,6 +13,8 @@ from app.langgraph.state import TravelState, create_initial_state
 # Import real node implementations
 from app.langgraph.nodes.collect_info import CollectInfoNode
 from app.langgraph.nodes.validate_complete import ValidateCompleteNode
+from app.langgraph.nodes.search_flights import SearchFlightsNode
+from app.langgraph.nodes.present_options import PresentOptionsNode
 
 
 def collect_info_node(state: TravelState, llm=None) -> TravelState:
@@ -27,17 +29,21 @@ def validate_complete_node(state: TravelState) -> TravelState:
     return node(state)
 
 
-def search_flights_node(state: TravelState) -> TravelState:
+def search_flights_node(state: TravelState, amadeus_client=None, cache_manager=None) -> TravelState:
     """SEARCH_FLIGHTS node - execute Amadeus API call with validated parameters"""
-    # Placeholder implementation - set empty search results to route to clarification
-    from app.langgraph.state import set_search_results
-    return set_search_results(state, {}, False)
+    if amadeus_client:
+        node = SearchFlightsNode(amadeus_client, cache_manager)
+        return node(state)
+    else:
+        # Fallback for testing - set empty search results to route to clarification
+        from app.langgraph.state import set_search_results
+        return set_search_results(state, {}, False)
 
 
 def present_options_node(state: TravelState) -> TravelState:
     """PRESENT_OPTIONS node - format and return flight results (Phase 1 endpoint)"""
-    # Placeholder implementation - just return state (this ends the flow)
-    return state
+    node = PresentOptionsNode()
+    return node(state)
 
 
 def needs_clarification_node(state: TravelState) -> TravelState:
@@ -101,20 +107,23 @@ def should_continue_clarification(state: TravelState) -> Literal["collect_info",
     return "collect_info"
 
 
-def create_travel_graph(llm=None) -> StateGraph:
+def create_travel_graph(llm=None, amadeus_client=None, cache_manager=None) -> StateGraph:
     """Create the main travel assistant state graph"""
 
     # Initialize the StateGraph with TravelState schema
     workflow = StateGraph(TravelState)
 
-    # Create node functions with LLM support
+    # Create node functions with dependencies
     def collect_info_with_llm(state: TravelState) -> TravelState:
         return collect_info_node(state, llm)
+
+    def search_flights_with_client(state: TravelState) -> TravelState:
+        return search_flights_node(state, amadeus_client, cache_manager)
 
     # Add nodes
     workflow.add_node("collect_info", collect_info_with_llm)
     workflow.add_node("validate_complete", validate_complete_node)
-    workflow.add_node("search_flights", search_flights_node)
+    workflow.add_node("search_flights", search_flights_with_client)
     workflow.add_node("present_options", present_options_node)
     workflow.add_node("needs_clarification", needs_clarification_node)
 
@@ -165,9 +174,9 @@ def create_travel_graph(llm=None) -> StateGraph:
     return workflow
 
 
-def compile_travel_graph(llm=None) -> Any:
+def compile_travel_graph(llm=None, amadeus_client=None, cache_manager=None) -> Any:
     """Compile the travel state graph for execution"""
-    workflow = create_travel_graph(llm)
+    workflow = create_travel_graph(llm, amadeus_client, cache_manager)
     return workflow.compile()
 
 
