@@ -47,10 +47,10 @@ class InformationExtractorTool:
         """Extract travel information from user message"""
 
         # First try fast parse for structured inputs
-        fast_result = self._try_fast_parse(message)
+        fast_result = self._try_fast_parse(message, current_state)
 
-        # Then try LLM for natural language
-        llm_result = self._try_llm_extraction(message) if self.llm else None
+        # Then try LLM for natural language with context
+        llm_result = self._try_llm_extraction(message, current_state) if self.llm else None
 
         # Detect corrections to existing state
         corrections = self._detect_corrections(message, current_state)
@@ -60,8 +60,8 @@ class InformationExtractorTool:
 
         return final_result
 
-    def _try_fast_parse(self, message: str) -> Optional[Dict[str, Any]]:
-        """Try fast regex-based parsing with inline patterns"""
+    def _try_fast_parse(self, message: str, current_state: TravelState = None) -> Optional[Dict[str, Any]]:
+        """Try fast regex-based parsing with inline patterns and context awareness"""
         try:
             # Quick patterns for structured inputs
             result = {
@@ -86,38 +86,107 @@ class InformationExtractorTool:
             if pax_match:
                 result["fields"]["passengers"] = int(pax_match.group(1))
 
+            # Context-aware single city name parsing
+            if not result["fields"] and current_state:
+                single_city = re.search(r'^([A-Za-z]{3,}(?:\s+[A-Za-z]+)?)$', message.strip())
+                if single_city:
+                    city_name = single_city.group(1).strip()
+
+                    # Get the last bot message to understand context
+                    conversation_history = current_state.get("conversation_history", [])
+                    last_bot_message = ""
+
+                    if conversation_history:
+                        for turn in reversed(conversation_history):
+                            if "bot" in turn:
+                                last_bot_message = turn["bot"].lower()
+                                break
+
+                    # Map single city to appropriate field based on context
+                    if "flying from" in last_bot_message or "where are you from" in last_bot_message:
+                        result["fields"]["origin"] = city_name.upper()
+                        result["confidence"] = 0.90  # High confidence for context match
+                        print(f"[DEBUG] Fast parse context: '{city_name}' mapped to origin based on '{last_bot_message[:50]}...'")
+                    elif "where would you like to go" in last_bot_message or "destination" in last_bot_message:
+                        result["fields"]["destination"] = city_name.upper()
+                        result["confidence"] = 0.90
+                        print(f"[DEBUG] Fast parse context: '{city_name}' mapped to destination based on '{last_bot_message[:50]}...'")
+
             return result if result["fields"] else None
         except Exception as e:
             print(f"[DEBUG] Fast parse error: {e}")
             return None
 
-    def _try_llm_extraction(self, message: str) -> Optional[Dict[str, Any]]:
-        """Try LLM-based extraction for natural language"""
+    def _try_llm_extraction(self, message: str, current_state: TravelState = None) -> Optional[Dict[str, Any]]:
+        """Try LLM-based extraction for natural language with context awareness"""
         if not self.llm:
             return None
 
         try:
-            # Direct LLM extraction without the removed extract_intent function
-            intent = None  # Simplified - LLM extraction handled in CollectInfoNode
-            if intent:
-                result = {
-                    "method": "llm",
-                    "confidence": 0.80,  # Lower confidence for LLM extraction
-                    "fields": {}
-                }
+            # Get conversation context
+            conversation_history = current_state.get("conversation_history", []) if current_state else []
+            last_bot_message = ""
 
-                if intent.origin:
-                    result["fields"]["origin"] = intent.origin
-                if intent.destination:
-                    result["fields"]["destination"] = intent.destination
-                if intent.departure_date:
-                    result["fields"]["departure_date"] = intent.departure_date
-                if intent.return_date:
-                    result["fields"]["return_date"] = intent.return_date
-                if intent.passengers:
-                    result["fields"]["passengers"] = intent.passengers
+            if conversation_history:
+                # Get the most recent bot message for context
+                for turn in reversed(conversation_history):
+                    if "bot" in turn:
+                        last_bot_message = turn["bot"]
+                        break
 
-                return result
+            # Build context-aware prompt
+            system_prompt = """Extract travel information from the user's message. Consider the conversation context.
+
+Return a JSON object with extracted fields:
+{
+  "origin": "departure city/airport code",
+  "destination": "arrival city/airport code",
+  "departure_date": "date string",
+  "return_date": "return date if mentioned",
+  "passengers": number,
+  "trip_type": "one_way" or "round_trip"
+}
+
+Context clues:
+- If bot asked "Where are you flying from?" and user gives a city → map to "origin"
+- If bot asked "Where would you like to go?" and user gives a city → map to "destination"
+- If user says just a city name, use the last bot question to determine if it's origin or destination
+- Extract only fields that are clearly mentioned or implied by context
+
+Only return the JSON object, no other text."""
+
+            user_prompt = f"""Last bot message: "{last_bot_message}"
+User's response: "{message}"
+
+Extract travel information:"""
+
+            # Call LLM with context
+            response = self.llm.invoke([
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ])
+
+            # Parse JSON response
+            import json
+            try:
+                extracted = json.loads(response.content.strip())
+
+                # Filter out None/empty values
+                fields = {k: v for k, v in extracted.items() if v is not None and v != ""}
+
+                if fields:
+                    result = {
+                        "method": "llm",
+                        "confidence": 0.85,  # Good confidence for context-aware extraction
+                        "fields": fields
+                    }
+                    print(f"[DEBUG] LLM extracted with context: {fields}")
+                    return result
+
+            except (json.JSONDecodeError, AttributeError) as e:
+                print(f"[DEBUG] LLM response parsing error: {e}")
+                print(f"[DEBUG] Raw LLM response: {response.content}")
+
         except Exception as e:
             print(f"[DEBUG] LLM extraction error: {e}")
 
