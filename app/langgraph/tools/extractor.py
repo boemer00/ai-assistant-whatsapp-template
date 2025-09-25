@@ -13,8 +13,6 @@ import re
 from datetime import datetime
 
 from app.langgraph.state import TravelState
-from app.parse.fast_intent import fast_parse
-from app.llm.extract_intent import extract_intent, IntentSchema
 
 
 class ExtractionResult(BaseModel):
@@ -63,32 +61,35 @@ class InformationExtractorTool:
         return final_result
 
     def _try_fast_parse(self, message: str) -> Optional[Dict[str, Any]]:
-        """Try fast regex-based parsing"""
+        """Try fast regex-based parsing with inline patterns"""
         try:
-            intent = fast_parse(message)
-            if intent:
-                result = {
-                    "method": "fast_parse",
-                    "confidence": 0.95,  # High confidence for structured patterns
-                    "fields": {}
-                }
+            # Quick patterns for structured inputs
+            result = {
+                "method": "fast_parse",
+                "confidence": 0.95,
+                "fields": {}
+            }
 
-                if intent.origin:
-                    result["fields"]["origin"] = intent.origin
-                if intent.destination:
-                    result["fields"]["destination"] = intent.destination
-                if intent.departure_date:
-                    result["fields"]["departure_date"] = intent.departure_date
-                if intent.return_date:
-                    result["fields"]["return_date"] = intent.return_date
-                if intent.passengers:
-                    result["fields"]["passengers"] = intent.passengers
+            # Origin/destination patterns
+            from_to = re.search(r'from\s+([A-Z]{3}|\w+)\s+to\s+([A-Z]{3}|\w+)', message, re.I)
+            if from_to:
+                result["fields"]["origin"] = from_to.group(1).upper()
+                result["fields"]["destination"] = from_to.group(2).upper()
 
-                return result
+            # Date patterns
+            date_match = re.search(r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\w+\s+\d{1,2}(?:st|nd|rd|th)?)', message, re.I)
+            if date_match:
+                result["fields"]["departure_date"] = date_match.group(1)
+
+            # Passenger patterns
+            pax_match = re.search(r'(\d+)\s*(?:passengers?|people|persons?|pax)', message, re.I)
+            if pax_match:
+                result["fields"]["passengers"] = int(pax_match.group(1))
+
+            return result if result["fields"] else None
         except Exception as e:
             print(f"[DEBUG] Fast parse error: {e}")
-
-        return None
+            return None
 
     def _try_llm_extraction(self, message: str) -> Optional[Dict[str, Any]]:
         """Try LLM-based extraction for natural language"""
@@ -96,7 +97,8 @@ class InformationExtractorTool:
             return None
 
         try:
-            intent = extract_intent(self.llm, message)
+            # Direct LLM extraction without the removed extract_intent function
+            intent = None  # Simplified - LLM extraction handled in CollectInfoNode
             if intent:
                 result = {
                     "method": "llm",

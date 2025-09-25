@@ -12,9 +12,7 @@ from app.amadeus.client import AmadeusClient
 
 # New imports for refactored components
 from app.session.redis_store import RedisSessionStore
-from app.conversation.conversational_handler import ConversationalHandler
 from app.cache.flight_cache import FlightCacheManager
-from app.async_handler import AsyncFlightSearchHandler, BackgroundTaskManager
 from app.user.preferences import UserPreferenceManager
 from app.formatters.enhanced_whatsapp import NaturalFormatter
 
@@ -48,7 +46,6 @@ async def lifespan(app: FastAPI):
     # Initialize managers
     app.state.cache_manager = FlightCacheManager(app.state.redis_store, app.state.amadeus)
     app.state.user_prefs = UserPreferenceManager(app.state.redis_store)
-    app.state.task_manager = BackgroundTaskManager()
     app.state.formatter = NaturalFormatter()
 
     # Initialize LangGraph handler (replacing ConversationalHandler)
@@ -59,17 +56,6 @@ async def lifespan(app: FastAPI):
         cache_manager=app.state.cache_manager,
         user_preferences=app.state.user_prefs,
         iata_db=app.state.iata
-    )
-
-    # Initialize async handler
-    app.state.async_handler = AsyncFlightSearchHandler(
-        redis_store=app.state.redis_store,
-        amadeus_client=app.state.amadeus,
-        twilio_config={
-            "account_sid": settings.TWILIO_ACCOUNT_SID,
-            "auth_token": settings.TWILIO_AUTH_TOKEN,
-            "whatsapp_number": settings.TWILIO_WHATSAPP_NUMBER
-        }
     )
 
     # Warm up services
@@ -95,9 +81,6 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     print("[INFO] Shutting down WhatsApp Travel Bot")
-    # Cleanup tasks
-    for task in app.state.task_manager.tasks.values():
-        task.cancel()
 
 
 app = FastAPI(
@@ -170,7 +153,6 @@ async def metrics(request: Request):
     snapshot.update({
         "cache": cache_stats,
         "circuit_breaker": breaker_state,
-        "active_tasks": len(getattr(request.app.state, "task_manager", type("T", (), {"tasks": {}})()).tasks),
     })
     return snapshot
 
