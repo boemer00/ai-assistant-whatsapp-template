@@ -17,6 +17,9 @@ from app.cache.flight_cache import FlightCacheManager
 from app.async_handler import AsyncFlightSearchHandler, BackgroundTaskManager
 from app.user.preferences import UserPreferenceManager
 from app.formatters.enhanced_whatsapp import NaturalFormatter
+
+# LangGraph integration
+from app.langgraph.handler import create_langgraph_handler
 from app.infrastructure.resilience import (
     ProductionMiddleware, CircuitBreaker, RateLimiter,
     HealthChecker, RequestValidator
@@ -48,11 +51,12 @@ async def lifespan(app: FastAPI):
     app.state.task_manager = BackgroundTaskManager()
     app.state.formatter = NaturalFormatter()
 
-    # Initialize conversation handler
-    app.state.conversation = ConversationalHandler(
+    # Initialize LangGraph handler (replacing ConversationalHandler)
+    app.state.conversation = create_langgraph_handler(
         session_store=app.state.redis_store,
         llm=app.state.llm,
         amadeus_client=app.state.amadeus,
+        cache_manager=app.state.cache_manager,
         user_preferences=app.state.user_prefs,
         iata_db=app.state.iata
     )
@@ -97,8 +101,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="WhatsApp Travel Agent (Refactored)",
-    version="2.0.0",
+    title="WhatsApp Travel Agent (LangGraph)",
+    version="3.0.0",
     lifespan=lifespan
 )
 
@@ -107,14 +111,15 @@ app = FastAPI(
 async def root():
     return {
         "service": "WhatsApp Travel Bot",
-        "version": "2.0.0",
+        "version": "3.0.0",
         "status": "running",
         "features": [
+            "LangGraph state machine",
+            "Systematic information collection",
+            "Bulletproof validation gates",
             "Redis-backed sessions",
             "Smart caching",
-            "Context-aware conversations",
-            "User preferences",
-            "Async processing",
+            "Natural result presentation",
             "Production resilience"
         ]
     }
@@ -206,35 +211,12 @@ async def whatsapp_webhook(
         welcome = user_prefs.format_welcome_back(phone_number)
         # Could send welcome via background task
 
-    # Process message with smart conversation handler
+    # Process message with LangGraph handler
     try:
         response = request.app.state.conversation.handle_message(
             user_id=phone_number,
             message=message
         )
-
-        # Check if this triggered a search
-        session = request.app.state.redis_store.get(phone_number)
-        if session and session.get("searching"):
-            # Handle search in background
-            search_params = session["info"]
-            task_id = f"search_{phone_number}_{asyncio.get_event_loop().time()}"
-
-            # Create background search task
-            coroutine = request.app.state.async_handler.search_and_respond(
-                user_id=phone_number,
-                phone_number=phone_number,
-                search_params=search_params
-            )
-
-            request.app.state.task_manager.create_task(task_id, coroutine)
-
-            # Return immediate acknowledgment
-            response = request.app.state.formatter.format_searching_message()
-
-            # Clear searching flag
-            session["searching"] = False
-            request.app.state.redis_store.set(phone_number, session)
 
     except Exception as e:
         log_event("webhook_error", error=str(e))
@@ -262,6 +244,25 @@ async def get_user_profile(request: Request, user_id: str):
     """Admin endpoint to view user profile and preferences"""
     profile = request.app.state.user_prefs.get_user_profile(user_id)
     return profile
+
+
+@app.get("/admin/user/{user_id}/conversation")
+async def get_user_conversation(request: Request, user_id: str):
+    """Admin endpoint to view user's LangGraph conversation state"""
+    return request.app.state.conversation.get_user_session_info(user_id)
+
+
+@app.post("/admin/user/{user_id}/reset")
+async def reset_user_conversation(request: Request, user_id: str):
+    """Admin endpoint to reset user's conversation state"""
+    success = request.app.state.conversation.reset_user_conversation(user_id)
+    return {"status": "reset" if success else "error", "user_id": user_id}
+
+
+@app.get("/admin/langgraph/metrics")
+async def langgraph_metrics(request: Request):
+    """Admin endpoint to get LangGraph conversation metrics"""
+    return request.app.state.conversation.get_conversation_metrics()
 
 
 @app.post("/admin/circuit/{name}/reset")
