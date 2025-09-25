@@ -10,12 +10,14 @@ from langgraph.graph import StateGraph, END
 from app.langgraph.state import TravelState, create_initial_state
 
 
-# Placeholder node functions (will be implemented in subsequent steps)
-def collect_info_node(state: TravelState) -> TravelState:
+# Import real node implementations
+from app.langgraph.nodes.collect_info import CollectInfoNode
+
+
+def collect_info_node(state: TravelState, llm=None) -> TravelState:
     """COLLECT_INFO node - extract and accumulate travel entities"""
-    # Placeholder implementation - just increment clarification attempts to prevent infinite loop
-    from app.langgraph.state import increment_clarification_attempts
-    return increment_clarification_attempts(state)
+    node = CollectInfoNode(llm)
+    return node(state)
 
 
 def validate_complete_node(state: TravelState) -> TravelState:
@@ -89,14 +91,18 @@ def should_continue_clarification(state: TravelState) -> Literal["collect_info",
     return "collect_info"
 
 
-def create_travel_graph() -> StateGraph:
+def create_travel_graph(llm=None) -> StateGraph:
     """Create the main travel assistant state graph"""
 
     # Initialize the StateGraph with TravelState schema
     workflow = StateGraph(TravelState)
 
+    # Create node functions with LLM support
+    def collect_info_with_llm(state: TravelState) -> TravelState:
+        return collect_info_node(state, llm)
+
     # Add nodes
-    workflow.add_node("collect_info", collect_info_node)
+    workflow.add_node("collect_info", collect_info_with_llm)
     workflow.add_node("validate_complete", validate_complete_node)
     workflow.add_node("search_flights", search_flights_node)
     workflow.add_node("present_options", present_options_node)
@@ -149,9 +155,9 @@ def create_travel_graph() -> StateGraph:
     return workflow
 
 
-def compile_travel_graph() -> Any:
+def compile_travel_graph(llm=None) -> Any:
     """Compile the travel state graph for execution"""
-    workflow = create_travel_graph()
+    workflow = create_travel_graph(llm)
     return workflow.compile()
 
 
