@@ -58,16 +58,18 @@ def should_validate(state: TravelState) -> Literal["validate_complete", "needs_c
     """Route from collect_info based on extracted information"""
     from app.langgraph.state import has_required_fields
 
-    # If we have basic required fields, attempt validation
+    # FIXED: Only validate when we actually have all required fields
+    # This prevents premature validation with partial/corrupted data
     if has_required_fields(state):
+        print(f"[DEBUG] All required fields present - routing to validation")
         return "validate_complete"
 
-    # If we have some information but not complete, still try validation
-    # to get proper error messages
-    if (state.get("origin") or state.get("destination") or state.get("departure_date")):
-        return "validate_complete"
+    # REMOVED: Premature validation logic that caused false errors
+    # Old logic: if (state.get("origin") or state.get("destination") or state.get("departure_date")):
+    #     return "validate_complete"
 
-    # Need more clarification
+    # Continue collecting information when fields are missing
+    print(f"[DEBUG] Missing required fields - staying in collect_info")
     return "needs_clarification"
 
 

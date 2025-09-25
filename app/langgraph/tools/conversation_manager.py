@@ -43,6 +43,8 @@ class ConversationManagerTool:
 
         # Check what's missing and generate appropriate question
         missing_fields = self._get_missing_critical_info(state)
+        print(f"[DEBUG] Missing fields: {missing_fields}")
+        print(f"[DEBUG] Current state: origin={state.get('origin')}, destination={state.get('destination')}, date={state.get('departure_date')}")
 
         if missing_fields:
             return self._generate_missing_info_question(state, missing_fields)
@@ -205,18 +207,27 @@ class ConversationManagerTool:
         departure_date = state.get("departure_date")
 
         primary_missing = missing_fields[0]
+        print(f"[DEBUG] Question selection: primary_missing='{primary_missing}', origin='{origin}', destination='{destination}', date='{departure_date}'")
 
         if primary_missing == "origin" and destination:
-            return f"Perfect! You want to go to {destination}. Where are you flying from?"
+            question = f"Perfect! You want to go to {destination}. Where are you flying from?"
+            print(f"[DEBUG] Selected question type: origin with destination context")
+            return question
 
         elif primary_missing == "destination" and origin:
-            return f"Great! Flying from {origin}. Where would you like to go?"
+            question = f"Great! Flying from {origin}. Where would you like to go?"
+            print(f"[DEBUG] Selected question type: destination with origin context")
+            return question
 
         elif primary_missing == "departure_date" and origin and destination:
-            return f"Excellent! {origin} to {destination}. What date would you like to travel?"
+            question = f"Excellent! {origin} to {destination}. What date would you like to travel?"
+            print(f"[DEBUG] Selected question type: date with full context")
+            return question
 
         elif primary_missing == "departure_date":
-            return "When would you like to travel?"
+            question = "When would you like to travel?"
+            print(f"[DEBUG] Selected question type: date only - THIS IS WRONG FOR GREETING!")
+            return question
 
         # Fallback questions
         question_map = {
@@ -225,7 +236,9 @@ class ConversationManagerTool:
             "departure_date": "When would you like to depart?"
         }
 
-        return question_map.get(primary_missing, "Could you provide more details about your trip?")
+        fallback_question = question_map.get(primary_missing, "Could you provide more details about your trip?")
+        print(f"[DEBUG] Selected fallback question for '{primary_missing}': {fallback_question}")
+        return fallback_question
 
     def _generate_trip_type_question(self, state: TravelState) -> ConversationAction:
         """Generate question about trip type (one-way vs round-trip)"""

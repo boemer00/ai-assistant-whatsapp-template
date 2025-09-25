@@ -241,6 +241,19 @@ async def reset_user_conversation(request: Request, user_id: str):
     return {"status": "reset" if success else "error", "user_id": user_id}
 
 
+@app.post("/admin/user/{user_id}/emergency-reset")
+async def emergency_reset_user(request: Request, user_id: str):
+    """Emergency endpoint to completely wipe user's session data"""
+    try:
+        # Complete session wipe - use this for debugging corrupted sessions
+        request.app.state.redis_store.client.delete(user_id)
+        print(f"[DEBUG] Emergency reset: completely wiped session for user {user_id}")
+        return {"status": "emergency_reset_complete", "user_id": user_id, "message": "All session data wiped"}
+    except Exception as e:
+        print(f"[ERROR] Emergency reset failed for user {user_id}: {e}")
+        return {"status": "error", "user_id": user_id, "error": str(e)}
+
+
 @app.get("/admin/langgraph/metrics")
 async def langgraph_metrics(request: Request):
     """Admin endpoint to get LangGraph conversation metrics"""
