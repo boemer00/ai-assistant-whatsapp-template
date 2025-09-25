@@ -171,15 +171,17 @@ class TestStateReducers:
         state1 = update_conversation(state, "Hello", "Hi there!")
         assert state1["user_message"] == "Hello"
         assert state1["bot_response"] == "Hi there!"
-        assert len(state1["conversation_history"]) == 0  # No previous conversation
+        assert len(state1["conversation_history"]) == 1  # First interaction added to history
 
-        # Second update should add to history
+        # Second update should add previous to history and current
         state2 = update_conversation(state1, "NYC to London", "Great choice!")
         assert state2["user_message"] == "NYC to London"
         assert state2["bot_response"] == "Great choice!"
-        assert len(state2["conversation_history"]) == 1
+        assert len(state2["conversation_history"]) == 2
         assert state2["conversation_history"][0]["user"] == "Hello"
         assert state2["conversation_history"][0]["bot"] == "Hi there!"
+        assert state2["conversation_history"][1]["user"] == "NYC to London"
+        assert state2["conversation_history"][1]["bot"] == "Great choice!"
 
     def test_set_search_results(self):
         """Test setting search results"""

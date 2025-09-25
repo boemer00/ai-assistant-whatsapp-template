@@ -12,6 +12,7 @@ from app.langgraph.state import TravelState, create_initial_state
 
 # Import real node implementations
 from app.langgraph.nodes.collect_info import CollectInfoNode
+from app.langgraph.nodes.validate_complete import ValidateCompleteNode
 
 
 def collect_info_node(state: TravelState, llm=None) -> TravelState:
@@ -22,9 +23,8 @@ def collect_info_node(state: TravelState, llm=None) -> TravelState:
 
 def validate_complete_node(state: TravelState) -> TravelState:
     """VALIDATE_COMPLETE node - comprehensive validation gate"""
-    # Placeholder implementation - set ready_for_api to False to route to clarification
-    from app.langgraph.state import set_api_ready
-    return set_api_ready(state, False)
+    node = ValidateCompleteNode()
+    return node(state)
 
 
 def search_flights_node(state: TravelState) -> TravelState:
@@ -52,9 +52,13 @@ def should_validate(state: TravelState) -> Literal["validate_complete", "needs_c
     """Route from collect_info based on extracted information"""
     from app.langgraph.state import has_required_fields
 
-    # If we have some information, attempt validation
-    if (state.get("origin") or state.get("destination") or
-            state.get("departure_date") or state["trip_type"] != "undecided"):
+    # If we have basic required fields, attempt validation
+    if has_required_fields(state):
+        return "validate_complete"
+
+    # If we have some information but not complete, still try validation
+    # to get proper error messages
+    if (state.get("origin") or state.get("destination") or state.get("departure_date")):
         return "validate_complete"
 
     # Need more clarification
@@ -63,11 +67,17 @@ def should_validate(state: TravelState) -> Literal["validate_complete", "needs_c
 
 def should_search(state: TravelState) -> Literal["search_flights", "needs_clarification"]:
     """Route from validate_complete based on validation results"""
-    # Only proceed to search if validation passed
-    if state.get("ready_for_api", False):
+    # CRITICAL: Only proceed to search if validation explicitly passed
+    ready_for_api = state.get("ready_for_api", False)
+
+    print(f"[DEBUG] Routing decision: ready_for_api={ready_for_api}")
+
+    if ready_for_api:
+        print("[DEBUG] VALIDATION GATE PASSED - Routing to search_flights")
         return "search_flights"
 
     # Return to clarification if validation failed
+    print("[DEBUG] VALIDATION GATE BLOCKED - Routing to needs_clarification")
     return "needs_clarification"
 
 

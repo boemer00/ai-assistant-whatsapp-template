@@ -131,19 +131,23 @@ def update_conversation(current: TravelState, user_msg: str, bot_msg: str) -> Tr
     """Update conversation history and current messages"""
     new_state = copy.deepcopy(current)
 
-    # Add to history if previous messages exist
+    # Add previous turn to history if it exists and wasn't already added
     if current["user_message"] and current["bot_response"]:
-        new_state["conversation_history"].append({
-            "user": current["user_message"],
-            "bot": current["bot_response"],
-            "timestamp": datetime.now().isoformat()
-        })
+        # Check if this turn is already in history
+        last_turn = current["conversation_history"][-1] if current["conversation_history"] else {}
+        if (last_turn.get("user") != current["user_message"] or
+            last_turn.get("bot") != current["bot_response"]):
+            new_state["conversation_history"].append({
+                "user": current["user_message"],
+                "bot": current["bot_response"],
+                "timestamp": datetime.now().isoformat()
+            })
 
     # Set current messages
     new_state["user_message"] = user_msg
     new_state["bot_response"] = bot_msg
 
-    # Always add current turn to history
+    # Add current turn to history
     new_state["conversation_history"].append({
         "user": user_msg,
         "bot": bot_msg,
