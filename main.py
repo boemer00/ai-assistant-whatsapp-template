@@ -246,8 +246,10 @@ async def emergency_reset_user(request: Request, user_id: str):
     """Emergency endpoint to completely wipe user's session data"""
     try:
         # Complete session wipe - use this for debugging corrupted sessions
-        request.app.state.redis_store.client.delete(user_id)
-        print(f"[DEBUG] Emergency reset: completely wiped session for user {user_id}")
+        # Use proper Redis key format with session: prefix
+        redis_key = f"session:{user_id}"
+        request.app.state.redis_store.client.delete(redis_key)
+        print(f"[DEBUG] Emergency reset: completely wiped session for user {user_id} (key: {redis_key})")
         return {"status": "emergency_reset_complete", "user_id": user_id, "message": "All session data wiped"}
     except Exception as e:
         print(f"[ERROR] Emergency reset failed for user {user_id}: {e}")

@@ -86,15 +86,103 @@ class InformationExtractorTool:
             if pax_match:
                 result["fields"]["passengers"] = int(pax_match.group(1))
 
-            # TEMPORARILY DISABLED: Context-aware parsing to isolate issues
-            # if not result["fields"] and current_state:
-            #     [context-aware parsing code removed for testing]
+            # CONSERVATIVE Context-aware single city parsing (PHASE 1)
+            if not result["fields"] and current_state:
+                self._try_conservative_context_extraction(message, current_state, result)
 
             print(f"[DEBUG] Fast parse extracted: {result['fields'] if result['fields'] else 'nothing'}")
             return result if result["fields"] else None
         except Exception as e:
             print(f"[DEBUG] Fast parse error: {e}")
             return None
+
+    def _try_conservative_context_extraction(self, message: str, current_state: TravelState, result: Dict[str, Any]):
+        """PHASE 1: Ultra-conservative context-aware extraction with strict safety constraints"""
+        try:
+            # SAFETY CHECK 1: Only process simple single city names
+            single_city_match = re.match(r'^([A-Za-z]{3,}(?:\s+[A-Za-z]+){0,2})$', message.strip())
+            if not single_city_match:
+                print(f"[DEBUG] Context extraction: '{message}' is not a simple city name - skipping")
+                return
+
+            city_name = single_city_match.group(1).strip()
+
+            # SAFETY CHECK 1.5: Never extract common greetings/non-travel words as travel fields
+            forbidden_words = {
+                'hello', 'hi', 'hey', 'good', 'morning', 'afternoon', 'evening', 'thanks', 'thank', 'you',
+                'please', 'yes', 'no', 'okay', 'ok', 'sure', 'great', 'perfect', 'excellent', 'nice'
+            }
+            if city_name.lower() in forbidden_words:
+                print(f"[DEBUG] Context extraction: '{city_name}' is a forbidden word - never extract as travel field")
+                return
+
+            # SAFETY CHECK 2: Get conversation context
+            conversation_history = current_state.get("conversation_history", [])
+            if not conversation_history:
+                print(f"[DEBUG] Context extraction: No conversation history - skipping")
+                return
+
+            # Get the most recent bot message
+            last_bot_message = ""
+            for turn in reversed(conversation_history):
+                if "bot" in turn and turn["bot"]:
+                    last_bot_message = turn["bot"].lower()
+                    break
+
+            if not last_bot_message:
+                print(f"[DEBUG] Context extraction: No bot message found - skipping")
+                return
+
+            print(f"[DEBUG] Context extraction: Analyzing '{city_name}' in context of bot question: '{last_bot_message[:60]}...'")
+
+            # SAFETY CHECK 3: Don't overwrite existing fields
+            current_origin = current_state.get("origin")
+            current_destination = current_state.get("destination")
+
+            # ULTRA-CONSERVATIVE CONTEXT MAPPING - Only crystal clear cases
+            extracted_field = None
+            extracted_value = None
+
+            # Case 1: Bot asked for origin, map to origin (if not already set)
+            if ("where are you flying from" in last_bot_message or
+                "flying from" in last_bot_message) and not current_origin:
+                extracted_field = "origin"
+                extracted_value = city_name.upper()
+                print(f"[DEBUG] Context extraction: Bot asked for origin, mapping '{city_name}' to origin")
+
+            # Case 2: Bot asked for destination, map to destination (if not already set)
+            elif ("where would you like to go" in last_bot_message or
+                  "where to" in last_bot_message or
+                  "destination" in last_bot_message) and not current_destination:
+                extracted_field = "destination"
+                extracted_value = city_name.upper()
+                print(f"[DEBUG] Context extraction: Bot asked for destination, mapping '{city_name}' to destination")
+
+            else:
+                print(f"[DEBUG] Context extraction: No clear context match - skipping extraction")
+                return
+
+            # SAFETY CHECK 4: Final validation before setting
+            if extracted_field and extracted_value:
+                # Double-check we're not creating conflicts
+                if (extracted_field == "origin" and current_destination and
+                    extracted_value.upper() == current_destination.upper()):
+                    print(f"[DEBUG] Context extraction: Would create origin=destination conflict - skipping")
+                    return
+
+                if (extracted_field == "destination" and current_origin and
+                    extracted_value.upper() == current_origin.upper()):
+                    print(f"[DEBUG] Context extraction: Would create origin=destination conflict - skipping")
+                    return
+
+                # Safe to extract
+                result["fields"][extracted_field] = extracted_value
+                result["confidence"] = 0.90  # High confidence for clear context
+                print(f"[DEBUG] Context extraction: SUCCESS - {extracted_field}={extracted_value}")
+
+        except Exception as e:
+            print(f"[DEBUG] Context extraction error: {e}")
+            # Fail safely - don't extract anything if there's an error
 
     def _try_llm_extraction(self, message: str, current_state: TravelState = None) -> Optional[Dict[str, Any]]:
         """Try LLM-based extraction - temporarily disabled to isolate issues"""
